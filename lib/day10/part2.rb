@@ -12,7 +12,7 @@ module Day10
       cycle = 0
       register = [1]
 
-      display = (1..HEIGHT).map { ['.'] * WIDTH }
+      display = (1..HEIGHT).map { ['⬛'] * WIDTH }
 
       lines.each do |line|
         cmd, arg = line.split
@@ -20,18 +20,19 @@ module Day10
         when "addx"
           cycle += 1
           register[cycle] = register[cycle-1]
-          mark(display, cycle, register[cycle])
+          mark(display, cycle, register[cycle-1])
 
           cycle += 1
           register[cycle] = register[cycle-1] + arg.to_i
-          mark(display, cycle, register[cycle])
+          mark(display, cycle, register[cycle-1])
         when "noop"
           cycle += 1
           register[cycle] = register[cycle-1]
-          mark(display, cycle, register[cycle])
+          mark(display, cycle, register[cycle-1])
         end
       end
 
+      draw_sprite(register.last)
       draw(display)
 
       nil
@@ -41,9 +42,26 @@ module Day10
       x = (cycle - 1) % 40
       y = (cycle - 1) / 40
 
-      if (register - (x+1)).abs <= 1
-        display[y][x] = '#'
-      end
+      mark_cell = (register - x).abs <= 1
+      display[y][x] = '⬜' if mark_cell
+
+      cursor_val = display[y][x]
+      display[y][x] = mark_cell ? '🟥' : '🟦'
+      draw_sprite(register)
+      draw(display)
+      sleep(0.1)
+      puts "\033[9A"
+      puts "\r"
+      display[y][x] = cursor_val
+    end
+
+    def draw_sprite(register)
+      line = ["⬛"] * 40
+      x = register
+      line[x] = '🟥'
+      line[x-1] = '🟥' unless x == 0
+      line[x+1] = '🟥' unless x == 39
+      puts line.join
     end
 
     def draw(display)
