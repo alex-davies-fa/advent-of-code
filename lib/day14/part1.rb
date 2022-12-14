@@ -72,6 +72,8 @@ module Day14
               break
             end
 
+            paint(rocks,sand,sand_pos)
+
             abyss = true if sand_pos[1] >= max_y_pos
           end
       end
@@ -85,6 +87,30 @@ module Day14
       return true if rocks.include?(pos)
       return true if sand.include?(pos)
       false
+    end
+
+    def paint(rocks, sand, curr_sand)
+      min_x = 460
+      max_x = 510
+      min_y = 10
+      max_y = 57
+
+      out = ""
+      (min_y..max_y).each do |y|
+        (min_x..max_x).each do |x|
+          (out << '🟫'; next) if rocks.include?(Vector[x,y])
+          (out << '🟨'; next) if sand.include?(Vector[x,y]) || curr_sand == Vector[x,y]
+          out << '⬛'
+        end
+        out << "\n"
+      end
+
+      print out
+
+      # sleep(0.01)
+
+      print "\033[#{max_y-min_y+1}A"
+      print "\r"
     end
   end
 end
