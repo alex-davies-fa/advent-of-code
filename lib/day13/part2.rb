@@ -19,29 +19,26 @@ module Day13
       left = p1.shift
       right = p2.shift
 
-      # We've run out of items on at least one list
-      if left.nil? && right.nil?
+      case [left, right]
+      in [nil, nil]
         return 0
-      elsif left.nil? && !right.nil?
+      in [nil, _]
         return 1
-      elsif !left.nil? && right.nil?
+      in [_, nil]
         return -1
-      end
-
-      # Comparison
-      if int?(left) && int?(right)
+      in [Integer, Integer]
         return 1 if left < right
         return -1 if left > right
         return compare(p1.clone,p2.clone)
-      elsif int?(left) && !int?(right)
+      in [Integer, Array]
         p1.unshift([left])
         p2.unshift(right)
         compare(p1.clone,p2.clone)
-      elsif !int?(left) && int?(right)
+      in [Array, Integer]
         p1.unshift(left)
         p2.unshift([right])
         compare(p1.clone,p2.clone)
-      else
+      in [Array, Array]
         list_compare = compare(left.clone, right.clone)
         return compare(p1.clone,p2.clone) if list_compare == 0
         return list_compare
