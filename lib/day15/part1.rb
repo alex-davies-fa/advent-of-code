@@ -35,27 +35,44 @@ module Day15
       row = sensors.length < 20 ? 10 : 2000000 # lol
       excluded = Set.new
 
+      covered_ranges = []
+
       sensors.each_with_index do |s, i|
         puts "Sensor #{i}/#{sensors.length}"
 
         closest_pos = Vector[s.pos[0],row]
-        step = 0
-        step_v = Vector[1,0]
 
         next if s.dist_to(closest_pos) >= s.b_dist
 
         spread = s.b_dist - s.dist_to(closest_pos)
-        to_add = (s.pos[0] - spread..s.pos[0]+spread).map { |x| Vector[x,row] }
-        excluded.merge(to_add)
+        covered_ranges << (s.pos[0] - spread..s.pos[0]+spread)
       end
 
-      sensors.each { |s| excluded.delete(s.b_pos) }
+      sensors.each { |s| covered_ranges << (s.b_pos[0]..s.b_pos[0]) if s.b_pos[1] == row }
 
-      # pp excluded.sort_by { |v| v[0] }
-      pp excluded.length
-      # pp excluded
-      # pp excluded.count { |s| s[0] >= 0 && s[0] <= bounds }
+      covered_ranges = merge_overlapping_ranges(covered_ranges)
+      pp covered_ranges.map { |r| r.end - r.begin }.sum
+
       nil
+    end
+
+    ## Cribbed from https://stackoverflow.com/questions/6017523/
+    def ranges_overlap?(a, b)
+      a.include?(b.begin) || b.include?(a.begin)
+    end
+
+    def merge_ranges(a, b)
+      [a.begin, b.begin].min..[a.end, b.end].max
+    end
+
+    def merge_overlapping_ranges(overlapping_ranges)
+      overlapping_ranges.sort_by(&:begin).inject([]) do |ranges, range|
+        if !ranges.empty? && ranges_overlap?(ranges.last, range)
+          ranges[0...-1] + [merge_ranges(ranges.last, range)]
+        else
+          ranges + [range]
+        end
+      end
     end
   end
 end
