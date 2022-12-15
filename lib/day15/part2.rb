@@ -7,12 +7,12 @@ module Day15
       attr_reader :pos, :b_pos
 
       def initialize(x,y,bx,by)
-        @pos = Vector[x,y]
-        @b_pos = Vector[bx,by]
+        @pos = [x,y]
+        @b_pos = [bx,by]
       end
 
       def b_dist
-        manhat(pos, b_pos)
+        @b_dist ||= manhat(pos, b_pos)
       end
 
       def dist_to(pos2)
@@ -20,7 +20,7 @@ module Day15
       end
 
       def manhat(a,b)
-        (a - b).map(&:abs).sum
+        (a[0] - b[0]).abs + (a[1] - b[1]).abs
       end
     end
 
@@ -35,13 +35,12 @@ module Day15
 
       candidates = []
 
-      (0..bounds).each do |row|
+      (3200000..bounds).each do |row|
         covered_ranges = []
 
         if row % 5000 == 0
           percent = (row * 1.0 / bounds * 100).round(1)
-          print "#{percent}% (#{candidates.length} candidates)"
-          print "\r"
+          puts "#{percent}% (#{candidates.length} candidates)"
         end
 
         sensors.each do |s|
@@ -59,39 +58,13 @@ module Day15
         covered_ranges = merge_overlapping_ranges(covered_ranges)
         covered_ranges = covered_ranges.map { |r| ([r.begin,0].max..[r.end,bounds].min) }
 
-        next if covered_ranges.length == 1 && covered_ranges.first.begin == 0 && covered_ranges.first.end == bounds
+        next if covered_ranges.length == 1 && covered_ranges.first.size == bounds+1
 
-        covered_ranges.unshift((0..0))
-        covered_ranges << (bounds..bounds)
-        covered_ranges.each_cons(2) do |r1, r2|
-          (r1.end...r2.begin).each do |x|
-            candidates << Vector[x,row]
-          end
-        end
-      end
-
-      puts "-----"
-      puts
-      puts "Candidates: "
-      pp candidates
-      puts
-
-      candidates.each do |c|
-        in_range = false
-        sensors.each do |s|
-          if s.dist_to(c) <= s.b_dist
-            in_range = true
-            break
-          end
-        end
-
-        if !in_range
-          puts "Beacon position:"
-          pp c
-          puts
-          puts "Tuning frequency:"
-          pp c[0]*4000000 + c[1]
-        end
+        puts "\nFound Beacon:"
+        x = covered_ranges.first.end + 1
+        pp Vector[x,row]
+        pp x*bounds + row
+        break
       end
 
       nil
