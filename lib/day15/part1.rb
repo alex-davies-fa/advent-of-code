@@ -40,12 +40,11 @@ module Day15
       sensors.each_with_index do |s, i|
         puts "Sensor #{i}/#{sensors.length}"
 
-        closest_pos = Vector[s.pos[0],row]
+        y_dist = (row - s.pos[1]).abs
+        next if y_dist >= s.b_dist
 
-        next if s.dist_to(closest_pos) >= s.b_dist
-
-        spread = s.b_dist - s.dist_to(closest_pos)
-        covered_ranges << (s.pos[0] - spread..s.pos[0]+spread)
+        spread = s.b_dist - y_dist
+      covered_ranges << (s.pos[0] - spread..s.pos[0]+spread)
       end
 
       sensors.each { |s| covered_ranges << (s.b_pos[0]..s.b_pos[0]) if s.b_pos[1] == row }
