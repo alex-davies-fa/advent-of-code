@@ -24,6 +24,8 @@ module Day16
       @counter = 0
       @max_value = 0
 
+      @state_values = {}
+
       sorted_nodes = nodes.keys.select { |n| nodes[n].rate > 0 }.sort_by { |n| nodes[n].rate}.reverse
       unopened = Set.new(sorted_nodes)
       pp unopened.map { |n| nodes[n].rate}
@@ -45,8 +47,8 @@ module Day16
         .sum
     end
 
-    def dfs(curr, nodes, unopened, time, value, output = [])
-      if time == 20
+    def dfs(curr, nodes, unopened, time, value, visited = Set.new, output = [])
+      if time == 30
         @counter += 1
         if value > @max_value
           puts "New max: #{value} at c = #{@counter}"
@@ -84,14 +86,24 @@ module Day16
           valves_opened = [my_move[1], ele_move[1]].compact
           new_unopened = valves_opened.any? ? unopened.clone.subtract(valves_opened) : unopened
           new_value = value + my_move[2] + ele_move[2]
+
+          new_state = [time, my_move[0], ele_move[0], new_unopened]
+          if @state_values.key?(new_state)
+            next if @state_values[new_state] >= new_value
+          end
+          @state_values[new_state] = new_value
+          # pp @state_values
+
+          # Debug
           path = nil
           # my_s = my_move[0] == my_move[1] ? "Open #{my_move[1]} (#{nodes[my_move[1]].rate})" : "Move #{curr[0]} -> #{my_move[0]}"
           # ele_s = ele_move[0] == ele_move[1] ? "Open #{ele_move[1]} (#{nodes[ele_move[1]].rate})" : "Move #{curr[1]} -> #{ele_move[0]}"
           # path = output.clone << "T: #{time}\nMe #{my_s}\nEl #{ele_s}\n\n"
-          dfs([my_move[0], ele_move[0]], nodes, new_unopened, time+1, new_value, path)
-        end
 
-      options.max
+          dfs([my_move[0], ele_move[0]], nodes, new_unopened, time+1, new_value, visited, path)
+        end.compact
+
+      options.empty? ? value : options.max
     end
 
     def value_of(rate, time)
