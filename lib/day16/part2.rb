@@ -15,27 +15,36 @@ module Day16
     end
   end
 
+  Move = Struct.new(:dest, :valve_opened, :value)
+
   TIME = 30
 
   class Part2
     def run(input_file)
       nodes = build_nodes(File.readlines(input_file))
+
+      # Optimisation (maybe?) - order all children by highest rate, so we'll preferentially visit the highest rate first
       nodes.values.each { _1.sort_children(nodes) }
-      @counter = 0
-      @max_value = 0
 
-      @state_values = {}
-
+      # Presort the our set of unopened nodes so we don't have to do it all the time
+      # (Not sure that set actually gaurantees the order you get back, but hey)
       sorted_nodes = nodes.keys.select { |n| nodes[n].rate > 0 }.sort_by { |n| nodes[n].rate}.reverse
       unopened = Set.new(sorted_nodes)
-      pp unopened.map { |n| nodes[n].rate}
-      pp dfs(["AA","AA"], nodes, unopened, 4, 0)
+
+      # Global state to store
+      # - Best current 30 min pressure release
+      # - Best pressure release for all visited states (i.e. time / position / valve opened tuples)
+      @max_value = 0
+      @state_values = {}
+
+      pp dfs("AA","AA", nodes, unopened, 4, 0)
 
       nil
     end
 
     # Get the maximum possible extra pressure release we can get from this point in time,
     # ignoring all constraints about moving between rooms
+    # i.e. pick the 8 highest closed valves, and open over the next 4 steps
     def max_possible(unopened, nodes, time)
       num_to_open = ((TIME - time) / 2.0).ceil * 2
       nodes_to_open =
@@ -47,60 +56,49 @@ module Day16
         .sum
     end
 
-    def dfs(curr, nodes, unopened, time, value, visited = Set.new, output = [])
-      if time == 30
-        @counter += 1
+    def dfs(my_pos, ele_pos, nodes, unopened, time, value, visited = Set.new)
+      # We've hit 30 mins - store this as the best value if it is
+      if time == TIME
         if value > @max_value
-          puts "New max: #{value} at c = #{@counter}"
+          puts "New max: #{value}"
           @max_value = value
-          # puts output
-          # puts
         end
-        # puts "#{@counter}: max = #{@max_value}" if @counter % 100000 == 0
         return value
       end
 
-      return value if unopened.empty?
+      # The maximum possible extra value we could get from this point is lower than our current best path,
+      # so bail out of this path
+      return 0 if (max_possible(unopened, nodes, time) + value) < @max_value
 
-      max_extra_poss = max_possible(unopened, nodes, time)
-      if (max_extra_poss + value) < @max_value
-        @counter += 1
-        return 0
-      end
-
-      # [new_node, valves_to_open, value_add]
+      # All my possible moves - open a valve if we're at an unopened one, or visit a child
       my_moves = []
-      if unopened.include?(curr[0])
-        my_moves << [curr[0], curr[0], value_of(nodes[curr[0]].rate, time+1)]
-      end
-      my_moves += nodes[curr[0]].children.map { |child| [child, nil, 0] }
+      my_moves << Move.new(my_pos, my_pos, value_of(nodes[my_pos].rate, time+1)) if unopened.include?(my_pos)
+      my_moves += nodes[my_pos].children.map { |child| Move.new(child, nil, 0) }
 
+      # All elephant possible moves - open a valve if we're at an unopened one, or visit a child
       ele_moves = []
-      if unopened.include?(curr[1]) && curr[0] != curr[1] # Elephant doesn't open if both in same room
-        ele_moves << [curr[1], curr[1], value_of(nodes[curr[1]].rate, time+1)]
+      if unopened.include?(ele_pos) && my_pos != ele_pos # Elephant doesn't open if both in same room
+        ele_moves << Move.new(ele_pos, ele_pos, value_of(nodes[ele_pos].rate, time+1))
       end
-      ele_moves += nodes[curr[1]].children.map { |child| [child, nil, 0] }
+      ele_moves += nodes[ele_pos].children.map { |child| Move.new(child, nil, 0) }
 
+      # Take the product of all our moves and all elephant moves, and continue DFS on each pair
       options =
         my_moves.product(ele_moves).map do |my_move, ele_move|
-          valves_opened = [my_move[1], ele_move[1]].compact
+          valves_opened = [my_move.valve_opened, ele_move.valve_opened].compact
           new_unopened = valves_opened.any? ? unopened.clone.subtract(valves_opened) : unopened
-          new_value = value + my_move[2] + ele_move[2]
+          new_value = value + my_move.value + ele_move.value
 
-          new_state = [time, my_move[0], ele_move[0], new_unopened]
-          if @state_values.key?(new_state)
-            next if @state_values[new_state] >= new_value
-          end
+          # Optimisation to prevent revisiting positions
+          # Check current state (time, positions, valves opened)
+          # If we've seen it before with at least as good value, bail on this path
+          # Otherwise record this state
+          new_state = [time, my_move.dest, ele_move.dest, new_unopened]
+          next if @state_values[new_state] >= new_value if @state_values.key?(new_state)
           @state_values[new_state] = new_value
-          # pp @state_values
 
-          # Debug
-          path = nil
-          # my_s = my_move[0] == my_move[1] ? "Open #{my_move[1]} (#{nodes[my_move[1]].rate})" : "Move #{curr[0]} -> #{my_move[0]}"
-          # ele_s = ele_move[0] == ele_move[1] ? "Open #{ele_move[1]} (#{nodes[ele_move[1]].rate})" : "Move #{curr[1]} -> #{ele_move[0]}"
-          # path = output.clone << "T: #{time}\nMe #{my_s}\nEl #{ele_s}\n\n"
-
-          dfs([my_move[0], ele_move[0]], nodes, new_unopened, time+1, new_value, visited, path)
+          # Continue DFS from this position
+          dfs(my_move.dest, ele_move.dest, nodes, new_unopened, time+1, new_value, visited)
         end.compact
 
       options.empty? ? value : options.max
