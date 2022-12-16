@@ -21,7 +21,7 @@ module Day16
       @max_value = 0
 
       unopened = Set.new(nodes.keys.select { |n| nodes[n].rate > 0 })
-      pp dfs(nodes.first[0], nodes, unopened, 0, 0)
+      pp dfs("AA", nodes, unopened, 0, 0)
 
       nil
     end
