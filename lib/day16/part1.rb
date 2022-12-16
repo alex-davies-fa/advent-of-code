@@ -37,34 +37,32 @@ module Day16
       v = nodes_to_open.each_with_index.map { |rate, i| value_of(rate, time+1+i*2) }.sum
     end
 
-    def dfs(curr, nodes, unopened, time, value, path=[])
+    def dfs(curr, nodes, unopened, time, value)
       if time == TIME
         @counter += 1
-        if value > @max_value
-          puts "New max: #{value} at time = #{time}"
-          pp path
-          @max_value = value
-        end
-        puts "#{@counter}: max = #{@max_value}" if @counter % 10000 == 0
+        puts "#{@counter}: max = #{@max_value}" if @counter % 100000 == 0
+
+        @max_value = value if value > @max_value
         return value
       end
 
       options = []
 
-      max_extra_poss = max_possible(unopened, nodes, time)
-      if (max_extra_poss + value) < @max_value
+      if (max_possible(unopened, nodes, time) + value) < @max_value
         @counter += 1
+        puts "#{@counter}: max = #{@max_value}" if @counter % 100000 == 0
+
         return 0
       end
 
       if unopened.include?(curr)
         new_unopened = unopened.clone.delete(curr)
         total_release = value_of(nodes[curr].rate, time+1)
-        options << dfs(curr, nodes, new_unopened, time+1, value + total_release, path.clone << "Open #{curr}, value: #{value + total_release}")
+        options << dfs(curr, nodes, new_unopened, time+1, value + total_release)
       end
 
       options += nodes[curr].children.map do |child|
-        dfs(child, nodes, unopened, time+1, value, path.clone << "Move #{child}, value: #{value}")
+        dfs(child, nodes, unopened, time+1, value)
       end
 
       options.max
