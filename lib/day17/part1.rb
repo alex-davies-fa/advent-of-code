@@ -15,7 +15,7 @@ module Day17
       [[0,0],[1,0],[0,1],[1,1]],
     ]
 
-    ANIMATE = false
+    ANIMATE = true
 
     COUNT = 2022
 
@@ -32,10 +32,14 @@ module Day17
         rock = next_rock
         p = [2,max_height+4]
 
+        print_rock(rock, p, filled)
+
         while true do
           # Push rock
           np = [p[0]+next_wind,p[1]]
           p = np if rock.none? { |r| r[0]+np[0] < 0 || r[0]+np[0] > 6  || filled.include?([r[0]+np[0],r[1]+np[1]]) }
+
+          print_rock(rock, p, filled)
 
           # Drop rock
           np = [p[0],p[1]-1]
@@ -54,16 +58,16 @@ module Day17
 
     def print_rock(rock, p, filled)
       max_x = 6
-      max_y = 20
+      max_y = 30
 
       rock = rock.map { |r| [r[0]+p[0],r[1]+p[1]] }
 
       for y in max_y.downto(0) do
         for x in 0.upto(max_x) do
           if filled.include?([x,y])
-            print '#'
+            print '🟫'
           else
-            rock.include?([x,y]) ? print('@') : print('.')
+            rock.include?([x,y]) ? print('⬜') : print('⬛')
           end
         end
         print "\n"
