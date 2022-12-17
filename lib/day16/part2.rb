@@ -17,9 +17,9 @@ module Day16
 
   Move = Struct.new(:dest, :valve_opened, :value)
 
-  TIME = 30
-
   class Part2
+    MAX_TIME = 30
+
     def run(input_file)
       nodes = build_nodes(File.readlines(input_file))
 
@@ -46,7 +46,7 @@ module Day16
     # ignoring all constraints about moving between rooms
     # i.e. pick the 8 highest closed valves, and open over the next 4 steps
     def max_possible(unopened, nodes, time)
-      num_to_open = ((TIME - time) / 2.0).ceil * 2
+      num_to_open = ((MAX_TIME - time) / 2.0).ceil * 2
       nodes_to_open =
         unopened.map { |node| nodes[node].rate }.first(num_to_open)
 
@@ -58,7 +58,7 @@ module Day16
 
     def dfs(my_pos, ele_pos, nodes, unopened, time, value, visited = Set.new)
       # We've hit 30 mins - store this as the best value if it is
-      if time == TIME
+      if time == MAX_TIME
         if value > @max_value
           puts "New max: #{value}"
           @max_value = value
@@ -105,7 +105,7 @@ module Day16
     end
 
     def value_of(rate, time)
-      (TIME-time)*rate
+      (MAX_TIME-time)*rate
     end
 
     def build_nodes(lines)

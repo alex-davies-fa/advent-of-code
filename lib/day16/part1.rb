@@ -11,9 +11,9 @@ module Day16
     end
   end
 
-  TIME = 30
-
   class Part1
+    MAX_TIME = 30
+
     def run(input_file)
       nodes = build_nodes(File.readlines(input_file))
 
@@ -29,7 +29,7 @@ module Day16
     # Get the maximum possible extra pressure release we can get from this point in time,
     # ignoring all constraints about moving between rooms
     def max_possible(unopened, nodes, time)
-      num_to_open = ((TIME - time) / 2.0).ceil
+      num_to_open = ((MAX_TIME - time) / 2.0).ceil
       nodes_to_open =
         unopened.map { |node| nodes[node].rate }
           .sort.reverse.first(num_to_open)
@@ -38,7 +38,7 @@ module Day16
     end
 
     def dfs(curr, nodes, unopened, time, value)
-      if time == TIME
+      if time == MAX_TIME
         @counter += 1
         puts "#{@counter}: max = #{@max_value}" if @counter % 100000 == 0
 
