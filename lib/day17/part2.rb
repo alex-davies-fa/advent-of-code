@@ -8,20 +8,20 @@ module Day17
     RIGHT = 1
 
     ROCKS = [
-      { all: [[0,0],[1,0],[2,0],[3,0]], left: [[0,0]], right: [[3,0]], bot: [[0,0],[1,0],[2,0],[3,0]]},
-      { all: [[1,0],[1,1],[1,2],[0,1],[1,1],[2,1]], left: [[1,0],[0,1],[1,2]], right: [[1,0],[2,1],[1,2]], bot: [[0,1],[1,0],[2,1]] },
-      { all: [[0,0],[1,0],[2,0],[2,1],[2,2]], left: [[0,0],[2,1],[2,2]], right: [[2,0],[2,1],[2,2]], bot: [[0,0],[1,0],[2,0]] },
-      { all: [[0,0],[0,1],[0,2],[0,3]], left: [[0,0],[0,1],[0,2],[0,3]], right: [[0,0],[0,1],[0,2],[0,3]], bot: [[0,0]] },
-      { all: [[0,0],[1,0],[0,1],[1,1]], left: [[0,0],[0,1]], right: [[1,0],[1,1]], bot: [[0,0],[1,0]] },
+      { ind: 0, all: [[0,0],[1,0],[2,0],[3,0]], left: [[0,0]], right: [[3,0]], bot: [[0,0],[1,0],[2,0],[3,0]]},
+      { ind: 1, all: [[1,0],[1,1],[1,2],[0,1],[2,1]], left: [[1,0],[0,1],[1,2]], right: [[1,0],[2,1],[1,2]], bot: [[0,1],[1,0],[2,1]] },
+      { ind: 2, all: [[0,0],[1,0],[2,0],[2,1],[2,2]], left: [[0,0],[2,1],[2,2]], right: [[2,0],[2,1],[2,2]], bot: [[0,0],[1,0],[2,0]] },
+      { ind: 3, all: [[0,0],[0,1],[0,2],[0,3]], left: [[0,0],[0,1],[0,2],[0,3]], right: [[0,0],[0,1],[0,2],[0,3]], bot: [[0,0]] },
+      { ind: 4, all: [[0,0],[1,0],[0,1],[1,1]], left: [[0,0],[0,1]], right: [[1,0],[1,1]], bot: [[0,0],[1,0]] },
     ]
 
     DRAW = false
-    ANIMATE = true
+    ANIMATE = 0.05
 
-    COUNT = 10_000
+    COUNT = 2022
 
     def run(input_file)
-      @wind = File.read(input_file).strip.chars
+      @wind = File.read(input_file).strip.chars.map { |c| c == '<' ? LEFT : RIGHT }
 
       @wind_index = 0
       @rock_index = 0
@@ -37,9 +37,11 @@ module Day17
         6 => Set.new([-1])
       }
 
-      precomputed = {}
+      precomputed = precompute_first_moves
 
       for n in 1..COUNT do
+        puts "#{(n*100.0/COUNT).round}%" if !DRAW && n % 100_000 == 0
+
         # Cull old filled spots
         if n % 100 == 0
           filled.keys.each { |k| filled[k] = Set.new(filled[k].select { |f| f > max_height - 100 }) }
@@ -51,20 +53,9 @@ module Day17
         print_rock(rock,p,filled, max_height)
 
         winds = [next_wind, next_wind, next_wind, next_wind]
-        if precomputed.key?([@rock_index, winds])
-          p = [precomputed[[@rock_index, winds]], p[1]-3]
-          print_rock(rock,p,filled, max_height)
-        else
-          x = p[0]
-          (0..3).each do |i|
-            nx = x+winds[i]
-            side = winds[i] == LEFT ? :left : :right
-            x = nx if rock[:all].none? { |r| r[0]+nx < 0 || r[0]+nx > 6 }
-          end
-          p = [x, p[1]-3]
-          precomputed[[@rock_index, winds]] = x
-          # pp precomputed
-        end
+        x_val = precomputed[rock[:ind]][winds[0]][winds[1]][winds[2]][winds[3]]
+        p = [x_val, max_height+4-3]
+        print_rock(rock,p,filled, max_height)
 
         while true do
           # Drop rock
@@ -93,8 +84,25 @@ module Day17
         print_rock(rock,p,filled, max_height)
       end
 
+      puts
       puts max_height + 1
       nil
+    end
+
+    def precompute_first_moves
+      precomputed = Hash.new {|h,k| h[k] = h.class.new(&h.default_proc) }
+      [LEFT,RIGHT].repeated_permutation(4).each do |winds|
+        ROCKS.each do |rock|
+          x = 2
+          (0..3).each do |i|
+            nx = x+winds[i]
+            side = winds[i] == LEFT ? :left : :right
+            x = nx if rock[:all].none? { |r| r[0]+nx < 0 || r[0]+nx > 6 }
+          end
+          precomputed[rock[:ind]][winds[0]][winds[1]][winds[2]][winds[3]] = x
+        end
+      end
+      precomputed
     end
 
     def print_rock(rock, p, filled, max_height)
@@ -126,26 +134,21 @@ module Day17
       if ANIMATE
         print "\033[#{y_range+2}A"
         print "\r"
-        sleep(0.05)
+        sleep(ANIMATE)
       end
     end
 
     def next_rock
-      rock = ROCKS[@rock_index].clone
-      @rock_index = (@rock_index + 1) % ROCKS.length
+      rock = ROCKS[@rock_index]
+      @rock_index += 1
+      @rock_index = 0 if @rock_index == ROCKS.length
       rock
     end
 
     def next_wind
-      dir =
-        if @wind[@wind_index] == '>'
-          RIGHT
-        elsif @wind[@wind_index] == '<'
-          LEFT
-        else
-          raise "BAD WIND"
-        end
-      @wind_index = (@wind_index + 1) % @wind.length
+      dir = @wind[@wind_index]
+      @wind_index += 1
+      @wind_index = 0 if @wind_index == @wind.length
       dir
     end
   end
