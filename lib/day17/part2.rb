@@ -15,10 +15,10 @@ module Day17
       { ind: 4, all: [[0,0],[1,0],[0,1],[1,1]], left: [[0,0],[0,1]], right: [[1,0],[1,1]], bot: [[0,0],[1,0]] },
     ]
 
-    DRAW = false
-    ANIMATE = 0.05
+    DRAW = true
+    ANIMATE = 0.1
 
-    COUNT = 2022
+    COUNT = 1_000_000_000_000
 
     def run(input_file)
       @wind = File.read(input_file).strip.chars.map { |c| c == '<' ? LEFT : RIGHT }
@@ -39,18 +39,39 @@ module Day17
 
       precomputed = precompute_first_moves
 
+      seen = Set.new
+      seen_map = {}
+      heights = [nil]
+
+      cycle_length = nil
+      cycle_offset = nil
+
       for n in 1..COUNT do
         puts "#{(n*100.0/COUNT).round}%" if !DRAW && n % 100_000 == 0
 
         # Cull old filled spots
-        if n % 100 == 0
+        if n % 1 == 0
           filled.keys.each { |k| filled[k] = Set.new(filled[k].select { |f| f > max_height - 100 }) }
         end
 
         rock = next_rock
-        p = [2,max_height+4]
 
-        print_rock(rock,p,filled, max_height)
+        # Store the current state
+        filled_norm = filled.flat_map { |x,ys| ys.map { |y| [x,max_height-y] } }
+        state = [@rock_index, @wind_index, filled_norm]
+        unseen = seen.add?(state)
+
+        if unseen
+          seen_map[state] = n # Store when we first saw this state
+        else
+          cycle_start = seen_map[state]
+          cycle_length = n - cycle_start
+          height_for_cycle = max_height - heights[cycle_start]
+          cycles, end_steps = (COUNT-cycle_start).divmod(cycle_length)
+          end_height = heights[cycle_start + end_steps] - heights[cycle_start]
+          puts heights[cycle_start] + cycles*height_for_cycle + end_height + 1
+          break
+        end
 
         winds = [next_wind, next_wind, next_wind, next_wind]
         x_val = precomputed[rock[:ind]][winds[0]][winds[1]][winds[2]][winds[3]]
@@ -81,11 +102,11 @@ module Day17
           filled[xpos].add(ypos)
         end
 
+        heights[n] = max_height
+
         print_rock(rock,p,filled, max_height)
       end
 
-      puts
-      puts max_height + 1
       nil
     end
 
@@ -119,8 +140,6 @@ module Day17
             print '🟫'
           elsif rock.include?([x,y])
             print('⬜')
-          elsif y == -1
-            print '🟫'
           elsif y < -1
             # NOOP
           else
@@ -132,7 +151,7 @@ module Day17
       puts
 
       if ANIMATE
-        print "\033[#{y_range+2}A"
+        print "\033[#{y_range+4}A"
         print "\r"
         sleep(ANIMATE)
       end
@@ -148,7 +167,9 @@ module Day17
     def next_wind
       dir = @wind[@wind_index]
       @wind_index += 1
-      @wind_index = 0 if @wind_index == @wind.length
+      if @wind_index == @wind.length
+        @wind_index = 0
+      end
       dir
     end
   end
