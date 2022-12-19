@@ -17,12 +17,10 @@ module Day19
     def run(input_file)
       blueprints = File.readlines(input_file).map { parse_line(_1) }
 
-      pp blueprints
-
       @leaf_count = 0
       @max = 0
 
-      counts = blueprints.map { calculate_val(_1) }
+      counts = blueprints.each_with_index.map { puts "Blueprint #{_2+1}"; val = calculate_val(_1); puts val; val }
 
       puts
       pp counts
@@ -32,7 +30,7 @@ module Day19
     end
 
     def calculate_val(b)
-      puts "Processing blueprint"
+      @max = 0
 
       robots = {
         ore: 1,
@@ -52,65 +50,85 @@ module Day19
     end
 
     def dfs(b, resources, robots, time, visited = Set.new, path = [])
-      if time == MINS
-        @leaf_count += 1
-        puts @leaf_count if @leaf_count % 1000000 == 0
-        if resources[:geode] > @max
-          @max = resources[:geode]
-          pp "New max: #{@max}"
-          # pp path
-          puts
-        end
+      if time >= MINS
+        # @leaf_count += 1
+        # puts @leaf_count if @leaf_count % 1000000 == 0
+        # if resources[:geode] > @max
+        #   @max = resources[:geode]
+        #   pp "New max: #{@max}"
+        #   # pp path
+        #   # puts
+        # end
         return resources[:geode]
       end
 
-      robot_options = [nil]
-      robot_options << :geode if resources[:ore] >= b.geode_cost_ore && resources[:obsidian] >= b.geode_cost_obsidian
-      robot_options << :obsidian if resources[:ore] >= b.obsidian_cost_ore && resources[:clay] >= b.obsidian_cost_clay
-      robot_options << :clay if resources[:ore] >= b.clay_cost_ore
-      robot_options << :ore if resources[:ore] >= b.ore_cost_ore
+      next_robot_options = [:clay, :ore]
+      next_robot_options << :obsidian if robots[:clay] > 0
+      next_robot_options << :geode if robots[:obsidian] > 0
 
-      # Remove "no build" option if we can build anything
-      robot_options == robot_options.compact if robot_options.length == 5
-
-      if robots[:obsidian] == 0 && robot_options.length == 4
-        robot_options = robot_options.compact
-      end
-
-      if robots[:clay] == 0 && robot_options.length == 3
-        robot_options = robot_options.compact
-      end
-
-      robot_options.map do |new_robot|
+      next_robot_options.map do |new_robot|
         new_resources = resources.clone
+        new_robots = robots.clone
+        new_time = time
 
-        if new_robot == :geode
-          new_resources[:ore] -= b.geode_cost_ore
-          new_resources[:obsidian] -= b.geode_cost_obsidian
-        elsif new_robot == :obsidian
-          new_resources[:ore] -= b.obsidian_cost_ore
-          new_resources[:clay] -= b.obsidian_cost_clay
-        elsif new_robot == :clay
-          new_resources[:ore] -= b.clay_cost_ore
-        elsif new_robot == :ore
-          new_resources[:ore] -= b.ore_cost_ore
+        while !add_robot?(b, new_robot, new_robots, new_resources) && new_time + 1 < MINS
+          new_time += 1
+          new_resources.keys.each { |r| new_resources[r] += robots[r] }
         end
 
+        new_time += 1
         new_resources.keys.each { |r| new_resources[r] += robots[r] }
 
-        new_robots = robots.clone
-        new_robots[new_robot] +=1 if new_robot
-
-        new_state = [new_resources, new_robots, time+1]
+        new_state = [new_resources, new_robots, new_time]
 
         if visited.add?(new_state)
-          # new_path = path.clone << "Time: #{time+1}, Build: #{new_robot}"
-          dfs(b, new_resources, new_robots, time+1, visited, nil)
+          # new_path = path.clone << "Time: #{new_time}, Build: #{new_robot}"
+          dfs(b, new_resources, new_robots, new_time, visited, nil)
         else
           0
         end
       end
         .max
+    end
+
+    def add_robot?(b, robot, robots, resources)
+      if robot == :geode
+        if resources[:ore] >= b.geode_cost_ore && resources[:obsidian] >= b.geode_cost_obsidian
+          resources[:ore] -= b.geode_cost_ore
+          resources[:obsidian] -= b.geode_cost_obsidian
+          return robots[:geode] += 1
+        else
+          return false
+        end
+      end
+
+      if robot == :obsidian
+        if resources[:ore] >= b.obsidian_cost_ore && resources[:clay] >= b.obsidian_cost_clay
+          resources[:ore] -= b.obsidian_cost_ore
+          resources[:clay] -= b.obsidian_cost_clay
+          return robots[:obsidian] += 1
+        else
+          return false
+        end
+      end
+
+      if robot == :clay
+        if resources[:ore] >= b.clay_cost_ore
+          resources[:ore] -= b.clay_cost_ore
+          return robots[:clay] += 1
+        else
+          return false
+        end
+      end
+
+      if robot == :ore
+        if resources[:ore] >= b.ore_cost_ore
+          resources[:ore] -= b.ore_cost_ore
+          return robots[:ore] += 1
+        else
+          return false
+        end
+      end
     end
 
     def parse_line(line)
