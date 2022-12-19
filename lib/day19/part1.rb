@@ -2,16 +2,16 @@ require 'csv'
 require 'pp'
 
 module Day19
-  Blueprint = Struct.new(
-    :ore_cost_ore,
-    :clay_cost_ore,
-    :obsidian_cost_ore,
-    :obsidian_cost_clay,
-    :geode_cost_ore,
-    :geode_cost_obsidian
-  )
-
   class Part1
+    Blueprint = Struct.new(
+      :ore_cost_ore,
+      :clay_cost_ore,
+      :obsidian_cost_ore,
+      :obsidian_cost_clay,
+      :geode_cost_ore,
+      :geode_cost_obsidian
+    )
+
     MINS = 24
 
     def run(input_file)
