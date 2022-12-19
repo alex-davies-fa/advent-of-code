@@ -15,11 +15,6 @@ module Day19
     MINS = 32
     B_COUNT = 3
 
-    # This is a kinda "empirically determined" (i.e. guessed / checked by seeing if the answer is correct) value of
-    # when we can stop worrying about other options and just always build geode robits. I feel bad. Probably
-    # would give the wrong value for some inputs.
-    CUTOFF = 26
-
     def run(input_file)
       blueprints = File.readlines(input_file).map { parse_line(_1) }
 
@@ -70,15 +65,13 @@ module Day19
         return resources[:geode]
       end
 
-      next_robot_options = [:clay, :ore]
-      next_robot_options << :obsidian if robots[:clay] > 0
+      next_robot_options = []
+      next_robot_options << :ore if robots[:ore] < [b.ore_cost_ore, b.clay_cost_ore, b.obsidian_cost_ore, b.geode_cost_ore].max
+      next_robot_options << :clay if robots[:clay] < b.obsidian_cost_clay
+      next_robot_options << :obsidian if robots[:clay] > 0 && robots[:obsidian] < b.geode_cost_obsidian
       next_robot_options << :geode if robots[:obsidian] > 0
 
       if robots[:ore] == b.geode_cost_ore && robots[:obsidian] == b.geode_cost_obsidian
-        next_robot_options = [:geode]
-      end
-
-      if time > CUTOFF
         next_robot_options = [:geode]
       end
 
