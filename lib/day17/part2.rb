@@ -15,7 +15,7 @@ module Day17
       { ind: 4, all: [[0,0],[1,0],[0,1],[1,1]], left: [[0,0],[0,1]], right: [[1,0],[1,1]], bot: [[0,0],[1,0]] },
     ]
 
-    DRAW = true
+    DRAW = false
     ANIMATE = 0.1
 
     COUNT = 1_000_000_000_000
@@ -64,6 +64,8 @@ module Day17
         if unseen
           seen_map[state] = n # Store when we first saw this state
         else
+          pp n
+          pp seen_map[state]
           cycle_start = seen_map[state]
           cycle_length = n - cycle_start
           height_for_cycle = max_height - heights[cycle_start]
