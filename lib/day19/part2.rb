@@ -22,11 +22,9 @@ module Day19
       @max = 0
 
       counts = blueprints.first(B_COUNT).each_with_index.map { puts "Blueprint #{_2+1}"; val = calculate_val(_1); puts val; val }
-      # counts = blueprints.each_with_index.map { puts "Blueprint #{_2+1}"; val = calculate_val(_1); puts val; val }
 
       puts
       pp counts
-      # pp counts.each_with_index.map { |c,i| c*(i+1) }.sum
       pp counts.reduce { _1 * _2 }
 
       nil
@@ -52,16 +50,9 @@ module Day19
       dfs(b, resources, robots, 0)
     end
 
-    def dfs(b, resources, robots, time, visited = Set.new, path = "")
+    def dfs(b, resources, robots, time, visited = Set.new)
       if time >= MINS
-        # @leaf_count += 1
-        # puts @leaf_count if @leaf_count % 1000000 == 0
-        if resources[:geode] > @max
-          @max = resources[:geode]
-          # puts "New max: #{@max}"
-          # puts path
-          # puts
-        end
+        @max = resources[:geode] if resources[:geode] > @max
         return resources[:geode]
       end
 
@@ -94,9 +85,7 @@ module Day19
           if resources[:geode] + max_remaining(new_time, new_resources[:geode], new_robots[:geode]) < @max
             0
           else
-            # new_path = path + "Time: #{new_time}, Build: #{new_robot}, Ore: #{new_robots[:ore]}, Obs: #{new_robots[:obsidian]}\n"
-            new_path = nil
-            dfs(b, new_resources, new_robots, new_time, visited, new_path)
+            dfs(b, new_resources, new_robots, new_time, visited)
           end
         else
           0
