@@ -4,8 +4,11 @@ require 'matrix'
 module Day23
   class Part2
 
+    ANIMATE = 0.1
+
     def run(input_file)
       elves = read_input(input_file)
+      print_elves(elves)
 
       all_dirs = [-1,0,1].repeated_permutation(2).reject { _1 == [0,0] }.map{ Vector[*_1] }
 
@@ -20,8 +23,7 @@ module Day23
       t = 0
 
       while !settled do
-        pp t += 1
-
+        t += 1
         moves = {}
 
         # Propose new positions
@@ -47,14 +49,15 @@ module Day23
           new_elves << (duplicates.include?(new) ? old : new)
         end
 
+        settled = true if elves == new_elves
+        elves = new_elves
+
         options = options.rotate
 
-        settled = true if elves == new_elves
-
-        elves = new_elves
+        print_elves(elves)
       end
 
-      print_elves(elves)
+      print_elves(elves, final: true)
       puts
       puts "Steps = #{t}"
 
@@ -70,14 +73,20 @@ module Day23
       [Vector[ymin,xmin], Vector[ymax,xmax]]
     end
 
-    def print_elves(elves)
+    def print_elves(elves, final: false)
       b = bounds(elves)
       for y in b[0][0]..b[1][0]
         for x in b[0][1]..b[1][1]
-          c = elves.include?(Vector[y,x]) ? '#' : '.'
+          c = elves.include?(Vector[y,x]) ? '🧝' : '⬛'
           print c
         end
         print "\n"
+      end
+
+      if ANIMATE && !final
+        print "\033[#{b[1][0]-b[0][0]+1}A"
+        print "\r"
+        sleep(ANIMATE)
       end
     end
 
