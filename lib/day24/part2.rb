@@ -10,7 +10,11 @@ module Day24
       'v'=> [1,0],
     }
 
+    ANIMATE = 0.2
+
     def run(input_file)
+      $stdout.sync = false
+
       wind = read_input(input_file)
       @width = wind.keys.map{_1[1]}.max + 1
       @height = wind.keys.map{_1[0]}.max + 1
@@ -32,28 +36,27 @@ module Day24
         if time > max_time
           max_time = time
           queue = queue.sort_by { |s| manhat(s[0], @goal) }
-          if time % 10 == 0
+          if time % 1 == 0
             queue = queue.first(50)
           end
           max_dist = manhat(queue.last[0], @goal)
           min_dist = manhat(queue.first[0], @goal)
-          puts "T: #{time}, Queue: #{queue.length}, Best: #{min_dist}, Worst: #{max_dist}"
+          # puts "T: #{time}, Queue: #{queue.length}, Best: #{min_dist}, Worst: #{max_dist}"
+          print_state(wind_at(time+1), queue.map{_1[0]})
         end
 
         pos, time = queue.shift
 
         if pos == @goal
           if goal_reached && start_reached
-            puts "FINISHED"
-            pp time
+            print_state(wind_at(time+1), queue.map{_1[0]}, final: true)
+            puts "Time: #{time}"
             break
           elsif goal_reached
-            puts "REACHED START"
             queue = []
             @goal, @start = [@start, @goal]
             start_reached = true
           else
-            puts "REACHED GOAL"
             queue = []
             @goal, @start = [@start, @goal]
             goal_reached = true
@@ -104,26 +107,35 @@ module Day24
       new_wind
     end
 
-    def print_state(wind, pos)
+    def print_state(wind, positions, final: false)
       char_map = WIND_MAP.invert
-
+      positions = Set.new(positions)
+      wind_set = Set.new(wind.keys)
       for y in -1..@height
         for x in -1..@width
-          if x == -1 || y == -1 || x == @width || y == @height
-            print '#'
-          elsif [y,x] == pos
-            print 'E'
-          elsif !wind.key?([y,x])
-            print '.'
-          elsif wind[[y,x]].length > 1
-            print wind[[y,x]].length
+          if positions.include?([y,x])
+            print '🧝'
+          elsif @goal == [y,x] || @start == [y,x]
+            print "⬜"
+          elsif x == -1 || y == -1 || x == @width || y == @height
+            print '🟫'
+          elsif wind_set.include?([y,x])
+            print '💨'
           else
-            print char_map[wind[[y,x]].first]
+            print '⬛'
           end
         end
         print "\n"
       end
-      puts
+
+      if ANIMATE && !final
+        print "\033[#{@height+2}A"
+        print "\r"
+        $stdout.flush
+        sleep(ANIMATE)
+      else
+        puts
+      end
     end
 
     def read_input(file)
