@@ -14,9 +14,9 @@ module Day12
         }
       end
 
+      memos = {}
       rows.each_with_index.sum do |row, i|
-        pp i
-        permutations(row[:record], row[:groups])
+        permutations(row[:record], row[:groups], memos)
       end
     end
 
@@ -33,23 +33,23 @@ module Day12
         return 0
       end
 
-      return memos[[record, groups]] if memos[[record, groups]]
+      if record.count("#?") < groups.sum || record.count("#") > groups.sum
+        return 0
+      end
 
-      largest_group = groups.max
-      largest_group_i = groups.index(largest_group)
+      memo = memos[[record, groups]]
+      return memo if memo
 
-      positions = valid_positions(largest_group, record)
+      group = groups.first
+      positions = valid_positions(group, record)
 
-      left_groups = groups[0...largest_group_i]
-      right_groups = groups[largest_group_i+1..-1]
+      right_groups = groups[1..-1]
 
       positions.sum do |p|
         left_record = p-1 < 0 ? "" : record[0...(p-1)]
-        right_record = p+largest_group+1 >= record.length ? "" : record[(p+largest_group+1)..-1]
+        right_record = p+group+1 >= record.length ? "" : record[(p+group+1)..-1]
 
-        left_perms = permutations(left_record, left_groups, memos)
-        memos[[left_record, left_groups]] = left_perms
-
+        left_perms = permutations(left_record, [], memos)
         right_perms = permutations(right_record, right_groups, memos)
         memos[[right_record, right_groups]] = right_perms
 
