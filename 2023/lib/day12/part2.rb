@@ -7,100 +7,64 @@ module Day12
       lines = File.readlines(input_file, chomp: true)
       rows = lines.map do |row|
         record, groups = row.split
-        record = record.split("")
         groups = groups.split(",").map(&:to_i)
         {
-          record: ((record + ["?"]) * 5)[0..-2],
+          record: ((record.split("") + ["?"]) * 5)[0..-2].join(""),
           groups: groups * 5
-          # record:,
-          # groups:
         }
       end
 
-      complete = 0
-      counts = rows.map do |row|
-        puts complete
-        complete += 1
-        # pp valid_perms(row[:record],row[:groups]).map(&:join)
-        valid_perms(row[:record],row[:groups]).length
+      rows.each_with_index.sum do |row, i|
+        pp i
+        permutations(row[:record], row[:groups])
       end
-
-      pp counts.sum
-      nil
     end
 
-    def valid_perms(record, groups, d = "")
-      # puts d + record.join("")
-      if groups.sum > record.count { _1 == "?" || _1 == "#" }
-        return []
-      end
-      if record.count { _1 == "#" } > groups.sum
-        return []
-      end
-      if invalid?(record, groups)
-        return []
-      end
-
-
-      first_unknown = record.find_index { _1 == "?" }
-
-      return [record] if !first_unknown
-
-      # Branch 1 - fill with "."
-      record1 = record.dup
-      record1[first_unknown] = "."
-      branch1 = valid_perms(record1, groups, d + "-")
-
-      # Branch 2 - fill whole next group if possible
-      branch2 = []
-      record2 = record.dup
-      group_start = first_unknown
-      while group_start-1 >= 0 && record2[group_start-1] == "#"
-        group_start -= 1
-      end
-      group_length = next_needed_group(record2, groups)
-      if group_length && record2.length >= group_start + group_length
-        vals_to_fill = record2[group_start...group_start+group_length] # These must all be ? or #
-        if vals_to_fill.none? { _1 == "." } && vals_to_fill.any? { _1 == "?" }
-          record2.fill("#", group_start, group_length)
-
-          if record2[group_start+group_length] == '#' # This is illegal
-            branch2 = []
-          else
-            record2[group_start+group_length] = "." # Have to have a "." next
-            branch2 = valid_perms(record2, groups, d + "-")
-          end
+    def permutations(record, groups, memos = {})
+      if groups.length == 0
+        if record.include?("#")
+          return 0
+        else
+          return 1
         end
       end
 
-      branch1 + branch2
+      if record.nil? || record.length == 0
+        return 0
+      end
+
+      return memos[[record, groups]] if memos[[record, groups]]
+
+      largest_group = groups.max
+      largest_group_i = groups.index(largest_group)
+
+      positions = valid_positions(largest_group, record)
+
+      left_groups = groups[0...largest_group_i]
+      right_groups = groups[largest_group_i+1..-1]
+
+      positions.sum do |p|
+        left_record = p-1 < 0 ? "" : record[0...(p-1)]
+        right_record = p+largest_group+1 >= record.length ? "" : record[(p+largest_group+1)..-1]
+
+        left_perms = permutations(left_record, left_groups, memos)
+        memos[[left_record, left_groups]] = left_perms
+
+        right_perms = permutations(right_record, right_groups, memos)
+        memos[[right_record, right_groups]] = right_perms
+
+        left_perms * right_perms
+      end
     end
 
-    def next_needed_group(record, groups)
-      complete_chunk = record[0...record.index("?")]
-      return groups.first unless complete_chunk.rindex(".")
-      decided_record = complete_chunk[0..complete_chunk.rindex(".")]
-      decided_groups = get_groups(decided_record)
-      groups[decided_groups.length]
-    end
-
-    def valid?(record, groups)
-      groups == get_groups(record)
-    end
-
-    def get_groups(record)
-      record.join.scan(/#+/).map(&:length)
-    end
-
-    def invalid?(record, groups)
-      complete_chunk = record[0...record.index("?")]
-      return false unless complete_chunk.rindex(".")
-      decided_record = complete_chunk[0..complete_chunk.rindex(".")]
-      decided_groups = get_groups(decided_record)
-
-      return false unless decided_groups.any?
-
-      decided_groups != groups[0...decided_groups.length]
+    def valid_positions(group_length, record)
+      (0..(record.length-group_length)).map do |i|
+        if !record[i...i+group_length].include?(".") &&
+          record[i+group_length] != "#" &&
+          (i == 0 || record[i-1] != "#" )
+          i
+        end
+      end.compact
     end
   end
 end
