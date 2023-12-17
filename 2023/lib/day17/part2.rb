@@ -1,6 +1,5 @@
 require 'csv'
 require 'pp'
-require 'pqueue'
 
 module Day17
   class Part2
@@ -15,9 +14,9 @@ module Day17
       min_cost = nil
 
       # Fringe stored as [node, direction, distance, cost]
-      fringe = PQueue.new { |a,b| a[3] + h(goal, a[0]) > b[3] + h(goal, b[0]) }
-      fringe.push([[1,0], [1,0], 1, nodes[1][0]])
-      fringe.push([[0,1], [0,1], 1, nodes[0][1]])
+      fringe = BucketQueue.new
+      fringe.push([[1,0], [1,0], 1, nodes[1][0]], nodes[1][0])
+      fringe.push([[0,1], [0,1], 1, nodes[0][1]], nodes[0][1])
 
       visited = Set.new
 
@@ -33,7 +32,7 @@ module Day17
           new_cost = cost + nodes[new_node[0]][new_node[1]]
 
           if visited.add?([new_node, new_dir, new_dist])
-            fringe.push([new_node, new_dir, new_dist, new_cost])
+            fringe.push([new_node, new_dir, new_dist, new_cost], new_cost + h(goal, new_node))
           end
         end
       end
@@ -69,6 +68,28 @@ module Day17
 
         [next_node, next_dir, next_dist]
       end.compact
+    end
+  end
+
+  class BucketQueue
+    def initialize
+      @buckets = []
+      @index = 0
+    end
+
+    def push(val, priority)
+      @buckets[priority] = [] unless @buckets[priority]
+      @buckets[priority] << val
+      @index = [@index, priority].min
+      val
+    end
+
+    def shift
+      while true do
+        val = @buckets[@index].shift if @buckets[@index] && @buckets[@index].any?
+        return val if val
+        @index += 1
+      end
     end
   end
 end
