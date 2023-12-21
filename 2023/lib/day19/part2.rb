@@ -2,14 +2,14 @@ require 'csv'
 require 'pp'
 
 module Day19
-  SYM_VALS = {
-    "x" => 0,
-    "m" => 1,
-    "a" => 2,
-    "s" => 3,
-  }
-
   class Part2
+    SYM_VALS = {
+      "x" => 0,
+      "m" => 1,
+      "a" => 2,
+      "s" => 3,
+    }
+
     def run(input_file)
       workflows_s, parts_s = File.read(input_file).split("\n\n")
 
