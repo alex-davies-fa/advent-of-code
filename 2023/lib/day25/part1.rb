@@ -3,87 +3,58 @@ require 'pp'
 
 module Day25
   class Part1
+    C = [1]
+
     def run(input_file)
       lines = File.readlines(input_file, chomp: true)
 
       graph = Hash.new { |h,k| h[k] = [] }
       lines.each do |l|
         a, *bs = l.scan(/[a-z]+/)
-        bs.each { |b| graph[a] << b; graph[b] << a }
+        bs.each { |b| graph[a] << b; graph[b] << a}
       end
 
-      # graph.each { |a,bs| puts "#{a} -- {#{bs.join(" ")}}" }
+      graph_orig = graph
 
-      nodes = (graph.keys + graph.values.inject(&:+)).uniq
+      # 1.times do
+      while true
+        graph = Hash.new { |h,k| h[k] = [] }
+        graph_orig.each { |k,v| graph[k] = v.dup }
+        while graph.length > 30
+          contract(graph)
+          # puts
+        end
+        # pp graph
+        graph.each { |a,bs| puts "#{a} -- {#{bs.join(" ")}}" }
 
-      n = nodes.first
-      edge_fringe = graph[n].map { |d| [n,d] }
-      partitions = { n => 0 }
+        partition_sizes = graph.keys.map { |k| k.start_with?("NN") ? k.split("_").last.to_i : 1 }
+        pp partition_sizes
+      end
 
-      pp search(edge_fringe, graph, partitions)
       nil
     end
 
-    def search(edge_fringe, graph, partitions, visited = Set.new, bridges = [])
-      if edge_fringe.empty?
-        if bridges.length == 3
-          return bridges
-        else
-          return nil
-        end
-      end
-
-      edge_fringe = edge_fringe.map(&:dup)
-      bridges = bridges.dup
-      partitions = partitions.dup
-      visited = visited.dup
-
-      edge = edge_fringe.shift
-
-      v1 = visited.add?(edge)
-      v2 = visited.add?(edge.reverse)
-      return search(edge_fringe, graph, partitions, visited, bridges) if (!v1 || !v2)
-
+    def contract(graph)
+      edge = graph.flat_map { |k,v| v.map { |v| [k,v] } }.sample
       n1,n2 = edge
+      new_node = "#{n1}:#{n2}"
+      c1 = n1.start_with?("NN") ? n1.split("_").last.to_i : 1
+      c2 = n2.start_with?("NN") ? n2.split("_").last.to_i : 1
 
-      if !partitions[n1]
-        puts "NO PARTITION FOR START NODE"
-        exit(0)
+      new_node = "NN_#{C.last}_#{c1+c2}"
+      C[0] = C[0] + 1
+
+      [n1,n2].each do |n|
+        graph[n].each do |v|
+          next if [n1, n2].include?(v)
+          graph[new_node] << v
+          graph[v] << new_node
+          graph[v].delete(n)
+        end
+        graph.delete(n)
       end
 
-      if partitions[n2]
-        if partitions[n1] == partitions[n2]
-          # Edge connects two nodes in the same partition, nothing to add
-          return search(edge_fringe, graph, partitions, visited, bridges)
-        elsif partitions[n1] != partitions[n2]
-          # Nodes are in different partitions, edge must be a bridge
-          return nil if bridges.length == 3
-          return search(edge_fringe, graph, partitions, visited, bridges + [edge])
-        end
-      else
-        # Try both options for partitioning end of edge node
-        # - Not switching partition
-        edge_fringe_1 = edge_fringe.map(&:dup)
-        edge_fringe_1 = edge_fringe_1 + graph[n2].filter_map { |d| [n2,d] unless d == n1 }
-        partitions_1 = partitions.dup
-        partitions_1[n2] = partitions[n1]
-        bridges_1 = bridges.dup
-        result_1 = search(edge_fringe_1, graph, partitions_1, visited, bridges_1)
-
-        # - Switching partition
-        result_2 = nil
-        if bridges.length < 3
-          edge_fringe_2 = edge_fringe.map(&:dup)
-          edge_fringe_2 = edge_fringe_2 + graph[n2].filter_map { |d| [n2,d] unless d == n1 }
-          partitions_2 = partitions.dup
-          partitions_2[n2] = 1 - partitions[n1]
-          bridges_2 = bridges.dup
-          bridges_2 << [edge]
-          result_2 = search(edge_fringe_2, graph, partitions_2, visited, bridges_2)
-        end
-
-        return result_1 || result_2
-      end
+      graph
     end
   end
 end
