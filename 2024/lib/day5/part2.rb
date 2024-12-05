@@ -13,7 +13,21 @@ module Day5
       pages.each { _1.default = 1000 } 
       
       unordered_pages = pages.filter { !ordered?(_1, rules) }
-      ordered_pages.map { middle(_1) }.sum
+
+      unordered_pages.map { |p| middle(sort(relevant_rules(p, rules))) }.sum
+    end
+
+    def sort(rules)
+      rules.sort_by { |page, before| before.length }.map(&:first).reverse
+    end
+
+    def relevant_rules(pages, all_rules)
+      rules = {}
+      pages.each do |p, _|
+        rules[p] = all_rules[p].filter { pages.keys.include?(_1) }
+      end
+
+      rules
     end
 
     def ordered?(pages, rules)
@@ -21,7 +35,7 @@ module Day5
     end
 
     def middle(pages)
-      pages.keys[(pages.length-1)/2]
+      pages[(pages.length-1)/2]
     end
   end
 end
