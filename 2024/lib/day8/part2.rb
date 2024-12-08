@@ -1,0 +1,47 @@
+require 'csv'
+require 'pp'
+
+module Day8
+  class Part2
+    def run(input_file)
+      lines = File.readlines(input_file).map { _1.strip.chars }
+      h = lines.length
+      w = lines[0].length
+      
+      antenna = Hash.new { |h,k| h[k] = [] }
+
+      (0...h).each do |y|
+        (0...w).each do |x|
+          next if lines[y][x] == "."
+          antenna[lines[y][x]] << [y,x]
+        end
+      end
+
+      locations = Set.new
+      antenna.values.each do |positions|
+        positions.permutation(2) do |a,b|
+          d = [b[0]-a[0],b[1]-a[1]]
+          next_pos = a
+          while in_bounds(next_pos,h,w)
+            locations << next_pos
+            next_pos = [next_pos[0]-d[0],next_pos[1]-d[1]]
+          end
+
+          next_pos = a
+          while in_bounds(next_pos,h,w)
+            locations << next_pos
+            next_pos = [next_pos[0]+d[0],next_pos[1]+d[1]]
+          end
+
+        end
+      end
+
+      locations.length
+    end
+
+    def in_bounds(p,h,w)
+      y,x = p
+      y >= 0 && y < h && x >=0 && x < w
+    end
+  end
+end
