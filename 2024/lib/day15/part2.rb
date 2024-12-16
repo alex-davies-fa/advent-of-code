@@ -10,11 +10,18 @@ module Day15
       'v' => [0,1],
     }
 
+    ANIMATE = true
+
     def run(input_file)
       pos, map, dirs = read_input(input_file)
 
       t = 0
       dirs.each do |d|
+        if ANIMATE
+          display(map, pos, 20, 10)
+          sleep 0.1
+        end
+
         new_pos = add(pos,d)
 
         if !map.key?(new_pos)
@@ -34,7 +41,6 @@ module Day15
         end
       end
 
-      # display(map, pos, 20, 10)
 
       map.filter { _2 != :wall && _1 == _2[0] }.sum { |p,v| p[0]+100*p[1] }
     end
