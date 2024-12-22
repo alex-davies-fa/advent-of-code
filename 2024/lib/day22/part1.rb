@@ -8,27 +8,24 @@ module Day22
     def run(input_file)
       initial_nums = File.readlines(input_file).map(&:to_i)
 
-      costs = []
-      diffs = []
       seq_vals = []
+      seq_scores = Hash.new(0)
       initial_nums.each_with_index do |n,i|
-        costs[i] = get_costs(n)
-        diffs[i] = costs[i].each_cons(2).map { _2 - _1 }
-        seq_vals[i] = seq_vals(diffs[i].each_cons(4),costs[i])
+        costs = get_costs(n)
+        diffs = costs.each_cons(2).map { _2 - _1 }
+        seq_vals(diffs.each_cons(4),costs,seq_scores)
       end
 
-      (-9..9).to_a.repeated_permutation(4).map do |seq|
-        seq_vals.sum { |seq_val| seq_val[seq] }
-      end.max
+      seq_scores.values.max
     end
 
-    def seq_vals(seqs,costs)
-      vals = Hash.new(0)
+    def seq_vals(seqs,costs,all_seqs)
+      visited = Set.new
       seqs.each_with_index do |seq, i|
-        next if vals.key?(seq)
-        vals[seq] = costs[i+4]
+        next if visited.include?(seq)
+        visited.add(seq)
+        all_seqs[seq] = all_seqs[seq] + costs[i+4]
       end
-      vals
     end
 
     def get_costs(n)
