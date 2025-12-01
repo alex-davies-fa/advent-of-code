@@ -3,9 +3,11 @@ require 'pp'
 
 module Day1
   class Part2
+    DIRMAP = { "L" => -1, "R" => 1 }
+
     def run(input_file)
       lines = File.readlines(input_file)
-      vals = lines.map { [_1[0], _1[1..].to_i] }
+      vals = lines.map { [DIRMAP[_1[0]], _1[1..].to_i] }
 
       curr = 50
       count = 0
@@ -15,11 +17,7 @@ module Day1
         val = val % 100
 
         prev = curr
-        if dir == "L"
-          curr -= val
-        else
-          curr += val
-        end
+        curr += dir * val
 
         if curr <= 0 || curr >= 100
           count += 1 unless prev == 0
@@ -27,7 +25,6 @@ module Day1
 
         curr = curr % 100
       end
-
 
       count
     end
