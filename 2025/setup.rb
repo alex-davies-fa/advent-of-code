@@ -17,7 +17,7 @@ end
 
 # Fetch input
 
-uri = URI("https://adventofcode.com/2024/day/#{day}/input")
+uri = URI("https://adventofcode.com/2025/day/#{day}/input")
 req = Net::HTTP::Get.new(uri)
 
 session_key = File.read(".session").strip
