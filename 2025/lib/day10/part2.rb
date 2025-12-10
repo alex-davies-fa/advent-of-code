@@ -1,5 +1,6 @@
 require 'csv'
 require 'pp'
+require 'z3'
 
 module Day10
   class Part2
@@ -7,60 +8,43 @@ module Day10
       lines = File.readlines(input_file).map { |l| l.chomp.split(" ") }
       machines = lines.map do |l|
         buttons = l[1..-2].map { _1[1..-2].split(",").map(&:to_i) }
-        buttons = buttons.sort_by { _1.length }
         joltages = l[-1][1..-2].split(",").map(&:to_i)
         
         { buttons: , joltages: }
       end
 
       machines.sum do |machine|
-        val = shortest_seq(machine)
-        pp val
-        val
+        minimize(machine)
       end
     end
 
-    def shortest_seq(machine)
-      target = machine[:joltages]
-      start_state = [0] * target.length
-      fringe = [ [start_state, Hash.new(0)] ]
-      visited = Set.new([start_state, Hash.new(0)])
-      best_solution = 999999999999
+    def minimize(machine)
+      solver = Z3::Optimize.new
+      vars = []
 
-      while state = fringe.shift
-        joltages, actions = state
-        if joltages == target && actions.values.sum < best_solution
-          best_solution = actions.values.sum
-          puts " - " + best_solution.to_s
-        end
-
-        machine[:buttons].each do |button|
-          new_joltages = next_state(joltages,button)
-          new_actions = actions.dup
-          new_actions[button] += 1
-          new_action_count = new_actions.values.sum
-
-          diffs = new_joltages.zip(target).map { _2 - _1 }
-          next if diffs.any? { _1 < 0 }
-          min_possible_steps = diffs.max
-          next if new_action_count + min_possible_steps > best_solution
-          
-          next if visited.include?([new_joltages,new_actions])
-
-          # pp new_action_count
-
-          visited.add([new_joltages,new_actions])
-          fringe.unshift([new_joltages,new_actions])
-        end
+      machine[:buttons].each_index do |b|
+        vars[b] = Z3.Int(as_var(b))
+        solver.assert(vars[b] >= 0)
       end
 
-      best_solution
+      # Adds constraint for each element of joltage, e.g. a + c + d == 15  
+      # if button a, c, and d all add 1 to a joltage element which should have value 15
+      machine[:joltages].each_with_index do |jolt, j|
+        relevant_buttons = []
+        machine[:buttons].each_with_index do |button,i|
+          relevant_buttons << vars[i] if button.include?(j)
+        end
+        solver.assert(relevant_buttons.sum == jolt)
+      end
+
+      solver.minimize(vars.sum)
+      solver.satisfiable?
+
+      vars.sum { |v| solver.model[v].to_i }
     end
 
-    def next_state(joltages,button)
-      joltages = joltages.dup
-      button.each { |i| joltages[i] += 1 }
-      joltages
+    def as_var(i)
+      (97+i).chr
     end
   end
 end
